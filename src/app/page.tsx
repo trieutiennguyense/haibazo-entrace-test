@@ -1,95 +1,128 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+import React, { useState, useCallback, useMemo } from 'react';
+import styled from 'styled-components';
+import Circle from './components/Circle';
+import { generateRandomPosition } from './utils/random-number';
+import useTimer from './hooks/use-timer';
 
-export default function Home() {
+const App = () => {
+
+  const [isPlay, setIsPlay] = useState<boolean>(false);
+
+  const [circleLength, setCircleLength] = useState<{length: number}>({length: 0});
+
+  const [prevNumber, setPrevNumber] = useState<number | null>(1);
+
+  const [circleValue, setCircleValue] = useState<number>(0);
+
+  const [isActive, setIsActive] = useState(false); 
+
+  const [time, resetTimer] = useTimer(isActive); 
+
+  const [activeCircles, setActiveCircles] = useState<number[]>([]);
+
+  const [isResult, setIsResult] = useState<boolean | null>(null)
+
+  const circles = useMemo(() => {
+    return Array.from({ length: circleLength.length}, () => generateRandomPosition());
+  }, [circleLength]);
+
+  const handlePlay = useCallback(() => {
+    if (!circleValue) return;
+    
+    else if(circleValue < 1) return;  
+
+    setIsPlay(true)
+    setActiveCircles([])
+    setIsResult(null)
+    setCircleLength(() => {
+      return {
+        ...{ length: circleValue}
+      }
+    })
+    setIsActive(true);
+    setPrevNumber(1);
+    resetTimer(); 
+  }, [circleValue, resetTimer]);
+
+  const handleActive = (index: number) => {
+    if(!isActive) return;
+
+    else if (index !== prevNumber) {
+      setIsResult(false)
+      setIsActive(false)
+      return;
+    }
+    else if (index === circleLength.length) {
+      setTimeout(() => {
+        setIsResult(true)
+        setIsActive(false)
+      }, 700)
+    }
+    setPrevNumber(index + 1)
+    setActiveCircles(prev => {
+      return prev.includes(index) ? prev : [...prev, index]
+    })
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <Container>
+      <h1 style={{ color: isResult === null ? "black" : isResult === false ? "red" : "green" }}>
+        {isResult === null ? "Let's play" : isResult === false ? "GAME OVER" : "ALL CLEARED"}
+      </h1>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      <PointSession>
+        <Text>Points</Text>
+        <input type='number' onChange={e => setCircleValue(+e.target.value)} placeholder='Enter your point'></input>
+      </PointSession>
+
+      <PointSession>
+        <Text>Time</Text>
+        <div>{`${time}s`}</div>
+      </PointSession>
+
+      <PointSession>
+        <button onClick={handlePlay}>{`${!isPlay ? "Play" : "Restart"}`}</button> 
+      </PointSession>
+
+      <CircleSession>
+        {circles.map((pos, index) => (
+          <Circle activeCircles={activeCircles} handleActive={handleActive} index={index + 1} key={index} x={pos.x} y={pos.y} />
+        ))}
+      </CircleSession>
+
+    </Container>
   );
-}
+};
+
+const Container = styled.div`
+  border: 1px solid black;
+  overflow: hidden;
+  width: 60%;
+  padding: 0 100px 0 100px;
+  margin: 0 auto;
+`;
+
+const CircleSession = styled.div`
+  position: relative;
+  border: 1px solid black;
+  display: flex;
+  height: 700px;
+  overflow: hidden;
+  margin-top: 20px;
+`;
+
+const PointSession = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100px;
+  justify-content: space-between;
+  margin-bottom: 30px;
+`;
+
+const Text = styled.div`
+  font-size: 18px;
+  margin-right: 20px;
+`;
+
+export default App;
