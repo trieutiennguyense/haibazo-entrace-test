@@ -98,7 +98,7 @@ const App = () => {
 const Container = styled.div`
   border: 1px solid black;
   overflow: hidden;
-  width: 60%;
+  width: 40%;
   padding: 0 100px 0 100px;
   margin: 0 auto;
 `;
@@ -107,7 +107,8 @@ const CircleSession = styled.div`
   position: relative;
   border: 1px solid black;
   display: flex;
-  height: 700px;
+  height: 650px;
+  width: 100%;
   overflow: hidden;
   margin-top: 20px;
 `;
